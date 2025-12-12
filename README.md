@@ -179,3 +179,331 @@ Just:
 2. Fill backend/.env (including X402_ADDRESS and PAYMENT_TOKEN_ADDRESS).
 3. Replace the placeholders in backend/public/index.html with your deployed contract addresses.
 4. Run the backend (`npm start` inside backend/) and open http://localhost:3000.
+
+
+
+下面我从 **纯技术视角**（Technical Perspective）把 **x402-hardhat-demo v4** 的所有功能拆分成**系统模块（Modules）**，适合用于：
+
+* 系统设计文档
+* 技术架构图
+* Jira Epic 拆解
+* 代码结构规划
+
+---
+
+# 🧩 **X402 API Marketplace Demo v4 — 技术功能模块 (Technical Modules)**
+
+---
+
+# 🔶 **模块 1：Web3 身份与签名模块（Web3 Identity & EIP-712 Signing）**
+
+## 1.1 钱包连接模块
+
+* 使用 `window.ethereum` 与 MetaMask 建立连接
+* 获取 `accounts[]`、`chainId`
+* 实例化 `ethers.BrowserProvider` 与 `signer`
+
+## 1.2 EIP-712 TypedData 构建模块
+
+* 构造 Domain（包含 chainId、verifyingContract）
+* 构建 TypedData：`Call`
+* 字段：
+
+  * `consumer`
+  * `apiId`
+  * `nonce`
+  * `deadline`
+
+## 1.3 前端签名模块
+
+使用：
+
+```js
+ethereum.request({
+  method: "eth_signTypedData_v4",
+  params: [address, typedJson]
+})
+```
+
+用于 API 调用授权（API Key → Wallet Key）
+
+## 1.4 后端签名验证模块
+
+通过：
+
+```js
+ethers.verifyTypedData(domain, types, message, signature)
+```
+
+实现：
+
+* 验证调用者身份
+* 确认 API 调用请求未伪造
+* 验证有效期（deadline）
+* 验证 nonce（当前 Demo 为时间戳型 nonce）
+
+---
+
+# 🔶 **模块 2：链上计量与计费模块（X402 Billing Engine Integration）**
+
+## 2.1 reportUsage（链上记录调用）
+
+* 后端调用：
+
+  ```
+  reportUsage(apiId, consumer, units, offchainRef)
+  ```
+* 解析事件 `UsageReported` 获取 `usageId`
+
+## 2.2 settleUsage（链上结算）
+
+* 后端调用：
+
+```
+settleUsage(usageId)
+```
+
+实时从预付费余额扣费。
+
+## 2.3 链上 Prepaid Units 管理
+
+* 查询：
+
+  ```
+  prepaidUnits(apiId, consumer)
+  ```
+* Prepay 流程：
+
+  1. approve(token, X402, amount)
+  2. prepay(apiId, units, consumer)
+
+---
+
+# 🔶 **模块 3：Provider 收益管理模块（Provider Revenue Management）**
+
+## 3.1 Provider Dashboard 数据模块
+
+后端 `/provider-info`：
+
+* 获取 API 列表
+* 查询每个 API provider 是否匹配
+* 聚合 providerBalance 总收入
+
+## 3.2 Provider 提现模块（Withdraw）
+
+后端 `/provider/withdraw`：
+
+* 调用：
+
+  ```
+  withdrawProviderRevenue(apiId, amount, provider)
+  ```
+* 管理 Provider 收益提取功能
+
+---
+
+# 🔶 **模块 4：API Registry & Marketplace 模块（API Definition & Metadata）**
+
+## 4.1 API 自动注册模块（Registrar）
+
+系统启动时后端执行：
+
+```
+ensureApisRegistered()
+```
+
+对每个 API：
+
+* 若未注册 → 注册
+* 配置：
+
+  * provider
+  * paymentToken
+  * pricePerUnit
+  * metadataURI
+
+## 4.2 API 列表模块（Marketplace List）
+
+后端 `/api-list`：
+
+* 返回所有 API 的：
+
+  * 名称、描述
+  * endpoint
+  * provider
+  * pricePerUnit
+  * active 状态
+  * providerBalance
+
+---
+
+# 🔶 **模块 5：业务 API 模块（Business APIs）**
+
+## 5.1 Hello API
+
+* 路由：`POST /demo/hello`
+* 功能：返回静态消息
+* 使用链上扣费 1 unit
+
+## 5.2 Random Number API
+
+* 路由：`POST /random/number`
+* 功能：返回随机整数
+* 使用链上扣费 1 unit
+
+---
+
+# 🔶 **模块 6：使用记录与历史统计模块（Usage History & Analytics）**
+
+## 6.1 使用记录（Memory Storage）
+
+使用后端内存记录：
+
+```
+usageHistory[]
+```
+
+字段：
+
+* usageId
+* apiId
+* consumer
+* units
+* timestamp
+* requestId
+* result（仅 random API）
+
+## 6.2 调用历史 REST 模块
+
+后端 `/history/:consumer`：
+
+* 查询某 wallet 的调用历史
+* 返回所有 API 的使用记录
+
+## 6.3 调用趋势图表模块（Chart.js）
+
+前端：
+
+* 聚合历史数据（按日期统计）
+* 绘制折线图（Calls Per Day）
+
+---
+
+# 🔶 **模块 7：状态与余额模块（Status & Balances）**
+
+## 7.1 Token 余额模块
+
+后端 `/token-info`：
+读取 ERC20：
+
+* balanceOf
+* decimals
+* symbol
+* name
+
+## 7.2 API 状态模块
+
+后端 `/status?address=...`：
+返回：
+
+* prepaidUnits
+* providerBalance
+* pricePerUnit
+* paymentToken
+
+前端展示在 KPI 面板。
+
+---
+
+# 🔶 **模块 8：Prepay 一键预付费模块（Approve + Prepay Combo）**
+
+流程：
+
+1. 输入 Units
+2. 查 pricePerUnit
+3. 计算 total = pricePerUnit × units
+4. 调用 ERC20 approve
+5. 调用 X402.prepay
+6. 刷新 KPI / Token Balance
+
+该模块将 ERC20 approve + prepay 封装成一键操作。
+
+---
+
+# 🔶 **模块 9：UI 与可视化模块（Dashboard & Visualization）**
+
+## 9.1 三栏式产品 UI 布局
+
+* 左列：Wallet + Provider Dashboard
+* 中列：API Marketplace + Last Call
+* 右列：Usage & Billing 面板 + History 表 + Trend 图
+
+## 9.2 API 卡片渲染模块
+
+动态渲染 `/api-list` 返回的 API 数据。
+
+## 9.3 调用结果显示模块
+
+展示最后一次 API 调用的 JSON Payload。
+
+---
+
+# 🔶 **模块 10：系统配置模块（Config / Env）**
+
+## 10.1 环境变量模块（backend/.env）
+
+包括：
+
+```
+RPC_URL
+X402_ADDRESS
+PAYMENT_TOKEN_ADDRESS
+METER_PRIVATE_KEY
+CONSUMER_PRIVATE_KEY
+PORT
+```
+
+## 10.2 Frontend 配置占位符
+
+需要填入：
+
+```js
+const X402_ADDRESS = "0x...";
+const PAYMENT_TOKEN_ADDRESS = "0x...";
+```
+
+---
+
+# 🧩 总结：v4 技术模块结构图（总览）
+
+```
+┌────────────────────────────┐
+│ Web3 Identity & Signature   │
+└───────────────┬────────────┘
+                │ EIP-712
+┌───────────────▼────────────┐
+│  Billing Engine (X402)      │
+│  reportUsage / settleUsage  │
+└───────────────┬────────────┘
+                │
+        ┌───────▼────────┐
+        │ API Marketplace │
+        └───────┬────────┘
+                │ /api-list
+        ┌───────▼──────────────┐
+        │ Business APIs (Hello) │
+        │ Business APIs (Random)│
+        └────────┬──────────────┘
+                 │ usageHistory
+        ┌────────▼────────────┐
+        │ Analytics Module     │
+        │ History + Trend      │
+        └────────┬────────────┘
+                 │
+        ┌────────▼────────────┐
+        │ Wallet / Provider    │
+        │ Balance / Revenue    │
+        └──────────────────────┘
+```
+
+
