@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>X402 API Marketplace Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #020617;
+      --bg-card: #0b1120;
+      --bg-card-soft: #020617;
+      --border-subtle: #1f2937;
+      --accent: #4f46e5;
+      --accent-soft: rgba(79, 70, 229, 0.15);
+      --text-main: #f9fafb;
+      --text-sub: #9ca3af;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: radial-gradient(circle at top, #1d2757 0, #020617 48%, #000 100%);
+      color: var(--text-main);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      letter-spacing: 0.02em;
+    }
+    h1 span.badge {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-left: 8px;
+    }
+    .subtitle {
+      margin: 0 0 16px;
+      color: var(--text-sub);
+      font-size: 13px;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 280px) minmax(0, 1.8fr) minmax(0, 1.2fr);
+      gap: 16px;
+    }
+    @media (max-width: 1024px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+    .card {
+      background: linear-gradient(145deg, rgba(15,23,42,0.98), rgba(15,23,42,0.92));
+      border-radius: 16px;
+      padding: 16px;
+      border: 1px solid rgba(148,163,184,0.15);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.75);
+    }
+    .card.soft {
+      background: var(--bg-card);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+    }
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+    .label {
+      font-size: 11px;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .value {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      word-break: break-all;
+    }
+    .kpi-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .kpi {
+      flex: 1;
+      min-width: 120px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: radial-gradient(circle at top left, rgba(79,70,229,0.16), rgba(15,23,42,0.9));
+      border: 1px solid rgba(79,70,229,0.35);
+    }
+    .kpi .label {
+      font-size: 10px;
+    }
+    .kpi .value {
+      font-size: 14px;
+      margin-top: 4px;
+    }
+    button {
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      margin-right: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    button.primary {
+      background: var(--accent);
+      color: #ffffff;
+    }
+    button.secondary {
+      background: rgba(15,23,42,0.9);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+    }
+    button.small {
+      padding: 4px 10px;
+      font-size: 11px;
+    }
+    input {
+      background: #020617;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      padding: 6px 10px;
+      color: var(--text-main);
+      font-size: 12px;
+      outline: none;
+      min-width: 80px;
+    }
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(79,70,229,0.4);
+    }
+    pre {
+      background: #020617;
+      padding: 8px;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-size: 11px;
+      border: 1px solid rgba(15,23,42,0.8);
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 11px;
+    }
+    th, td {
+      border: 1px solid #1f2937;
+      padding: 4px 6px;
+      text-align: left;
+    }
+    th {
+      background: #020617;
+      font-weight: 500;
+      color: var(--text-sub);
+    }
+    .api-card {
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: radial-gradient(circle at top left, rgba(79,70,229,0.16), rgba(15,23,42,0.9));
+      border: 1px solid rgba(51,65,85,0.9);
+      margin-bottom: 8px;
+    }
+    .api-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .api-card-name {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .api-card-tag {
+      font-size: 11px;
+      padding: 1px 8px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(148,163,184,0.35);
+      color: var(--text-sub);
+    }
+    .muted {
+      color: var(--text-sub);
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <h1>
+    X402 API Marketplace
+    <span class="badge">Demo</span>
+  </h1>
+  <p class="subtitle">Sign API calls with your wallet, pay per-call on-chain, and track usage & revenue in real time.</p>
+
+  <div class="layout">
+    <!-- Left column: wallet & provider -->
+    <div class="left-col">
+      <div class="card">
+        <div class="label">Wallet</div>
+        <div id="wallet" class="value">Not connected</div>
+        <div style="margin-top:10px;">
+          <button id="connectBtn" class="primary">Connect Wallet</button>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="label">Token Balance</div>
+          <div id="tokenInfo" class="value muted">—</div>
+        </div>
+      </div>
+
+      <div class="card soft" style="margin-top:16px;">
+        <h2>Provider Dashboard</h2>
+        <p class="subtitle" style="margin-bottom:8px;">If this wallet is the provider for any API, you'll see balances here.</p>
+        <button id="providerInfoBtn" class="secondary small">Refresh Provider Info</button>
+        <button id="providerWithdrawBtn" class="secondary small">Withdraw All Revenue</button>
+        <pre id="providerInfo" style="margin-top:8px; max-height:180px;">No provider data.</pre>
+      </div>
+    </div>
+
+    <!-- Middle column: marketplace & latest response -->
+    <div class="middle-col">
+      <div class="card">
+        <h2>API Marketplace</h2>
+        <p class="subtitle" style="margin-bottom:8px;">Select an API below to sign and send a metered request.</p>
+        <div id="apiList">Loading...</div>
+      </div>
+
+      <div class="card soft" style="margin-top:16px;">
+        <h2>Last API Call</h2>
+        <pre id="callOutput">No call yet.</pre>
+      </div>
+    </div>
+
+    <!-- Right column: status, history, trend -->
+    <div class="right-col">
+      <div class="card">
+        <h2>Usage & Billing (Hello API)</h2>
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="label">Prepaid Units</div>
+            <div id="kpiPrepaid" class="value">—</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Provider Revenue</div>
+            <div id="kpiRevenue" class="value">—</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;">
+          <input id="prepayUnits" placeholder="Units" type="number" min="1" style="width:110px" />
+          <button id="prepayBtn" class="primary small">Prepay</button>
+          <button id="statusBtn" class="secondary small">Refresh Status</button>
+        </div>
+        <pre id="statusOutput" style="margin-top:8px; max-height:150px;">No data yet.</pre>
+      </div>
+
+      <div class="card soft" style="margin-top:16px;">
+        <h2>Usage History</h2>
+        <button id="historyBtn" class="secondary small">Load History</button>
+        <div style="margin-top:8px; max-height:160px; overflow:auto;">
+          <table id="historyTable">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>API</th>
+                <th>Units</th>
+                <th>Usage</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card soft" style="margin-top:16px;">
+        <h2>Usage Trend</h2>
+        <canvas id="usageChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    const API_BASE = window.location.origin;
+    const { ethers } = window;
+
+    function toApiId(str) {
+      return "0x" + Array.from(new TextEncoder().encode(str))
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("")
+        .padEnd(64, "0");
+    }
+
+    const API_ID_HELLO = toApiId("demo/hello");
+    const API_ID_RANDOM = toApiId("random/number");
+
+    // Replace with real deployed addresses
+    const X402_ADDRESS = "<X402_ADDRESS_PLACEHOLDER>";
+    const PAYMENT_TOKEN_ADDRESS = "<PAYMENT_TOKEN_ADDRESS_PLACEHOLDER>";
+
+    const X402_ABI = [
+      "function getApiConfig(bytes32 apiId) external view returns (tuple(address provider,address paymentToken,uint256 pricePerUnit,string metadataURI,bool active))",
+      "function prepay(bytes32 apiId, uint256 units, address consumer) external",
+      "function prepaidUnits(bytes32 apiId, address consumer) external view returns (uint256)"
+    ];
+
+    const ERC20_ABI = [
+      "function approve(address spender, uint256 amount) external returns (bool)",
+      "function balanceOf(address owner) external view returns (uint256)",
+      "function decimals() external view returns (uint8)"
+    ];
+
+    const EIP712_TYPES = {
+      Call: [
+        { name: "consumer", type: "address" },
+        { name: "apiId", type: "bytes32" },
+        { name: "nonce", type: "uint256" },
+        { name: "deadline", type: "uint256" }
+      ]
+    };
+
+    let provider, signer, currentAccount, chainId, usageChart;
+
+    async function connectWallet() {
+      if (!window.ethereum) {
+        alert("No wallet found. Please install MetaMask or another Web3 wallet.");
+        return;
+      }
+      provider = new ethers.BrowserProvider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      signer = await provider.getSigner();
+      currentAccount = accounts[0];
+      const net = await provider.getNetwork();
+      chainId = Number(net.chainId.toString());
+      document.getElementById("wallet").textContent = currentAccount + " (chainId=" + chainId + ")";
+      await Promise.all([
+        fetchStatus(),
+        fetchTokenInfo(),
+        loadMarketplace(),
+        loadHistory(),
+        loadProviderInfo()
+      ]);
+    }
+
+    async function fetchTokenInfo() {
+      if (!currentAccount) return;
+      const res = await fetch(`/token-info?address=${currentAccount}`);
+      const data = await res.json();
+      if (data.error) {
+        document.getElementById("tokenInfo").textContent = data.error;
+        return;
+      }
+      const bal = ethers.formatUnits(data.balance, data.decimals);
+      document.getElementById("tokenInfo").textContent = bal + " " + data.symbol;
+    }
+
+    async function fetchStatus() {
+      if (!currentAccount) {
+        return;
+      }
+      const url = `/status?address=${currentAccount}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.error) {
+        document.getElementById("statusOutput").textContent = data.error;
+        return;
+      }
+      document.getElementById("statusOutput").textContent = JSON.stringify(data, null, 2);
+      document.getElementById("kpiPrepaid").textContent = data.prepaidUnits;
+      const decimals = 18; // demo token
+      const revenue = ethers.formatUnits(data.providerBalance, decimals);
+      document.getElementById("kpiRevenue").textContent = revenue + " DEMO";
+    }
+
+    async function prepayUnits() {
+      if (!currentAccount) {
+        alert("Connect wallet first.");
+        return;
+      }
+      if (!provider || !signer) {
+        alert("No provider / signer available.");
+        return;
+      }
+      const unitsStr = document.getElementById("prepayUnits").value;
+      if (!unitsStr || Number(unitsStr) <= 0) {
+        alert("Enter valid units");
+        return;
+      }
+      const units = BigInt(unitsStr);
+      const x402 = new ethers.Contract(X402_ADDRESS, X402_ABI, signer);
+      const token = new ethers.Contract(PAYMENT_TOKEN_ADDRESS, ERC20_ABI, signer);
+
+      const cfg = await x402.getApiConfig(API_ID_HELLO);
+      const pricePerUnit = cfg.pricePerUnit;
+      const total = pricePerUnit * units;
+
+      const decimals = await token.decimals();
+      console.log("Prepay", units.toString(), "units costing", ethers.formatUnits(total, decimals), "tokens");
+
+      let tx = await token.approve(X402_ADDRESS, total);
+      await tx.wait();
+
+      tx = await x402.prepay(API_ID_HELLO, units, currentAccount);
+      await tx.wait();
+
+      alert("Prepay success!");
+      await Promise.all([fetchStatus(), fetchTokenInfo()]);
+    }
+
+    async function loadHistory() {
+      if (!currentAccount) return;
+      const res = await fetch(`/history/${currentAccount}`);
+      const data = await res.json();
+      const tbody = document.querySelector("#historyTable tbody");
+      tbody.innerHTML = "";
+
+      data.slice().reverse().forEach(h => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${new Date(h.timestamp).toLocaleString()}</td>
+          <td>${h.apiId}</td>
+          <td>${h.units}</td>
+          <td>${h.usageId.slice(0,10)}...</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const counts = {};
+      data.forEach(h => {
+        const day = new Date(h.timestamp).toISOString().substring(0, 10);
+        counts[day] = (counts[day] || 0) + 1;
+      });
+      const labels = Object.keys(counts);
+      const values = Object.values(counts);
+
+      const ctx = document.getElementById("usageChart");
+      if (usageChart) usageChart.destroy();
+      usageChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Calls per day",
+            data: values
+          }]
+        }
+      });
+    }
+
+    async function loadMarketplace() {
+      const res = await fetch("/api-list");
+      const list = await res.json();
+      const wrap = document.getElementById("apiList");
+      wrap.innerHTML = "";
+      if (!Array.isArray(list) || list.length === 0) {
+        wrap.textContent = "No APIs registered.";
+        return;
+      }
+
+      list.forEach(api => {
+        const div = document.createElement("div");
+        div.className = "api-card";
+        const price = ethers.formatUnits(api.pricePerUnit || "0", 18);
+        const providerShort = api.provider ? api.provider.slice(0, 6) + "..." + api.provider.slice(-4) : "—";
+        div.innerHTML = `
+          <div class="api-card-header">
+            <div>
+              <div class="api-card-name">${api.name}</div>
+              <div class="muted">${api.description || ""}</div>
+            </div>
+            <span class="api-card-tag">${api.active ? "Active" : "Inactive"}</span>
+          </div>
+          <div class="muted">Endpoint: ${api.endpoint}</div>
+          <div class="muted">Provider: ${providerShort}</div>
+          <div class="muted">Price: <strong>${price} DEMO</strong> per call</div>
+          <div style="margin-top:6px;">
+            <button class="primary small" data-endpoint="${api.endpoint}" data-apiid="${api.apiId}">Call API</button>
+          </div>
+        `;
+        wrap.appendChild(div);
+      });
+
+      wrap.onclick = async (e) => {
+        if (e.target.tagName === "BUTTON" && e.target.dataset.endpoint) {
+          const endpoint = e.target.dataset.endpoint;
+          const apiId = e.target.dataset.apiid;
+          await callApi(endpoint, apiId);
+          await loadHistory();
+          await fetchStatus();
+        }
+      };
+    }
+
+    async function signCall(apiId) {
+      const nonce = BigInt(Date.now()) % 10000000000000000n;
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 300);
+
+      const domain = {
+        name: "X402Demo",
+        version: "1",
+        chainId,
+        verifyingContract: X402_ADDRESS
+      };
+
+      const typed = JSON.stringify({
+        types: {
+          EIP712Domain: [
+            { name: "name", type: "string" },
+            { name: "version", type: "string" },
+            { name: "chainId", type: "uint256" },
+            { name: "verifyingContract", type: "address" }
+          ],
+          Call: EIP712_TYPES.Call
+        },
+        primaryType: "Call",
+        domain,
+        message: {
+          consumer: currentAccount,
+          apiId,
+          nonce,
+          deadline
+        }
+      });
+
+      const signature = await window.ethereum.request({
+        method: "eth_signTypedData_v4",
+        params: [currentAccount, typed]
+      });
+
+      return { nonce, deadline, signature };
+    }
+
+    async function callApi(endpoint, apiId) {
+      if (!currentAccount) {
+        alert("Connect wallet first.");
+        return;
+      }
+      if (!provider || !signer) {
+        alert("No provider / signer.");
+        return;
+      }
+
+      const { nonce, deadline, signature } = await signCall(apiId);
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          consumer: currentAccount,
+          nonce: nonce.toString(),
+          deadline: deadline.toString(),
+          signature
+        })
+      });
+
+      const data = await res.json();
+      document.getElementById("callOutput").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function loadProviderInfo() {
+      if (!currentAccount) return;
+      const res = await fetch(`/provider-info?address=${currentAccount}`);
+      const data = await res.json();
+      if (data.error) {
+        document.getElementById("providerInfo").textContent = data.error;
+        return;
+      }
+      document.getElementById("providerInfo").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function providerWithdraw() {
+      const res = await fetch("/provider/withdraw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (data.error) {
+        alert("Withdraw failed: " + data.error);
+      } else {
+        alert("Withdraw done.");
+      }
+      await loadProviderInfo();
+      await fetchStatus();
+      await fetchTokenInfo();
+    }
+
+    document.getElementById("connectBtn").addEventListener("click", connectWallet);
+    document.getElementById("statusBtn").addEventListener("click", fetchStatus);
+    document.getElementById("prepayBtn").addEventListener("click", prepayUnits);
+    document.getElementById("historyBtn").addEventListener("click", loadHistory);
+    document.getElementById("providerInfoBtn").addEventListener("click", loadProviderInfo);
+    document.getElementById("providerWithdrawBtn").addEventListener("click", providerWithdraw);
+  </script>
+</body>
+</html>
